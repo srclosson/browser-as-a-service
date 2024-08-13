@@ -1,4 +1,4 @@
-FROM node:15.7.0-alpine AS node
+FROM node:current-alpine3.19 AS node
 
 # Install base utils
 RUN set -x \
@@ -16,6 +16,7 @@ RUN set -x \
       chromium@edge \
       nss@edge
 
+      
 FROM node AS build
 ARG NAME
 ARG NPM_TOKEN
@@ -25,7 +26,7 @@ RUN mkdir /home/node/$NAME
 WORKDIR /home/node/$NAME
 
 # Install npm packages
-COPY --chown=node:node package.json package-lock.json .snyk ./
+COPY --chown=node:node package.json package-lock.json ./
 RUN NODE_ENV= npm ci
 
 # Build app

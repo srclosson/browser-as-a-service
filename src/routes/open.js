@@ -20,10 +20,10 @@ class Open extends Route {
     )
   }
 
-  async handler({ query }) {
+  async handler({ query, timeout = 30000 }) {
     const { url } = query
 
-    return Browser.open(url)
+    return Browser.open(url, timeout)
   }
 
   validate() {
