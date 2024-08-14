@@ -6,17 +6,17 @@ RUN set -x \
     su-exec \
     curl \
     netcat-openbsd
+    
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    nodejs \
+    yarn
 
-# Install chromium
-RUN set -x \
-  && apk update && apk upgrade \
-  && echo @edge http://nl.alpinelinux.org/alpine/edge/community >> /etc/apk/repositories \
-  && echo @edge http://nl.alpinelinux.org/alpine/edge/main >> /etc/apk/repositories \
-  && apk --no-cache add \
-      chromium@edge \
-      nss@edge
-
-      
 FROM node AS build
 ARG NAME
 ARG NPM_TOKEN
@@ -56,7 +56,7 @@ ENV NAME $NAME
 ENV VERSION $VERSION
 ENV VERSION_COMMIT $VERSION_COMMIT
 ENV VERSION_BUILD_DATE $VERSION_BUILD_DATE
-ENV PUPPETEER_EXECUTABLE_PATH /usr/bin/chromium-browser
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 EXPOSE 3000
 

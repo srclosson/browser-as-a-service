@@ -7,42 +7,22 @@
 
 /* eslint-disable no-undef */
 
-const _ = require('lodash')
-const RandomHttpUserAgent = require('random-http-useragent')
-const puppeteer = require('puppeteer-core')
-const { logger } = require('modern-logger')
-
-const { PUPPETEER_EXECUTABLE_PATH } = process.env
+const puppeteer = require('puppeteer')
 
 const defaultOptions = {
-  puppeteer: {
-    executablePath: PUPPETEER_EXECUTABLE_PATH,
-    args: ['--no-sandbox', '--disable-dev-shm-usage']
-  },
-  'random-http-useragent': {}
+  headless: true,
+  args: ['--no-sandbox', '--disable-dev-shm-usage'],
 }
 
 class Browser {
-  constructor() {
-    this._options = _.defaultsDeep({}, defaultOptions)
-
-    RandomHttpUserAgent.configure(_.get(this._options, 'random-http-useragent'))
-  }
-
-  async open(url, timeout) {
+  async open(url) {
     if (!url) {
       throw new Error('invalid arguments')
     }
 
     const result = {}
-
-    const [userAgent, browser] = await Promise.all([
-      RandomHttpUserAgent.get(), 
-      puppeteer.launch(_.get(this._options, 'puppeteer')),
-    ])
-
+    const browser = await puppeteer.launch({ ...defaultOptions })
     const page = await browser.newPage()
-    await page.setUserAgent(userAgent)
 
     page.on('console', (consoleMessage) => {
       if (!result.console) {
@@ -55,16 +35,16 @@ class Browser {
       })
     })
 
-    page.on('metrics', (title, metrics) => {
-      console.info('We got metrics', title, JSON.stringify(metrics))
-    })
-
     const response = await page.goto(url, { waitUntil: 'networkidle0' })
     result.elements = await page.content()
     result.pageMetrics = await page.metrics()
     result.statusCode = response.status()
     result.fromCache = response.fromCache()
-    await browser.close()
+    try {
+      await browser.close()
+    } catch (ex) {
+      return result
+    }
 
     return result
   }
