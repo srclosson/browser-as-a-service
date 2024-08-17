@@ -52,10 +52,10 @@ COPY --chown=node:node share/docker/start.sh start.sh
 COPY --chown=node:node share/docker/test.sh test.sh
 
 # Set app runtime environment variables
-ENV NAME $NAME
-ENV VERSION $VERSION
-ENV VERSION_COMMIT $VERSION_COMMIT
-ENV VERSION_BUILD_DATE $VERSION_BUILD_DATE
+ENV NAME=$NAME
+ENV VERSION=$VERSION
+ENV VERSION_COMMIT=$VERSION_COMMIT
+ENV VERSION_BUILD_DATE=$VERSION_BUILD_DATE
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 EXPOSE 3000

@@ -43,6 +43,7 @@ class Browser {
     try {
       await browser.close()
     } catch (ex) {
+      console.error(ex)
       return result
     }
 
