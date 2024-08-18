@@ -1,21 +1,21 @@
-/*
- * Copyright (c) 2018, Hugo Freire <hugo@exec.sh>.
- *
- * This source code is licensed under the license found in the
- * LICENSE.md file in the root directory of this source tree.
- */
-
-/* eslint-disable no-undef */
-
-const puppeteer = require('puppeteer')
+const puppeteer = require('puppeteer');
+const { meterProvider, loggerProvider } = require('./opentelemetry');
 
 const defaultOptions = {
   headless: true,
   args: ['--no-sandbox', '--disable-dev-shm-usage'],
 }
 
+const meter = meterProvider.getMeter('baas');
+const requestDuration = meter.createHistogram('browser_request_duration', {
+  description: 'Measure the duration of incoming requests to the browser render',
+});
+const logger = loggerProvider.getLogger('baas');
+
 class Browser {
   async open(url) {
+    const startTime = Date.now();
+
     if (!url) {
       throw new Error('invalid arguments')
     }
@@ -35,11 +35,13 @@ class Browser {
       })
     })
 
-    const response = await page.goto(url, { waitUntil: 'networkidle0' })
-    result.elements = await page.content()
-    result.pageMetrics = await page.metrics()
-    result.statusCode = response.status()
-    result.fromCache = response.fromCache()
+    const response = await page.goto(url, { waitUntil: 'networkidle2' })
+    requestDuration.record(Date.now - startTime, { event: 'networkidle2'});
+    result.elements = await page.content();
+    result.pageMetrics = await page.metrics();
+    result.statusCode = response.status();
+    result.fromCache = response.fromCache();
+    logger.info(result.pageMetrics);
     try {
       await browser.close()
     } catch (ex) {

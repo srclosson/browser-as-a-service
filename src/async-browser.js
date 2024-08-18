@@ -5,6 +5,24 @@ const defaultOptions = {
     args: ['--no-sandbox', '--disable-dev-shm-usage'],
   }
 
+// Function to get the full HTML content of a page, including frames
+async function getFullPageContent(page) {
+    // Retrieve the main document's content
+    let content = await page.content();
+
+    // Retrieve all frame contents
+    const frames = page.frames();
+    for (const frame of frames) {
+        // Skip the main frame, only process subframes
+        if (frame !== page.mainFrame()) {
+            const frameContent = await frame.content();
+            content += `<iframe src="${frame.url()}">${frameContent}</iframe>`;
+        }
+    }
+
+    return content;
+}
+
 const open = async (req, res) => {
     const targetUrl = req.query.url;
 
@@ -18,27 +36,18 @@ const open = async (req, res) => {
         // Launch a headless browser instance using Puppeteer
         browser = await puppeteer.launch({ ...defaultOptions });
         const page = await browser.newPage();
-        page.setCacheEnabled(false);
 
-        // Listen to the 'load' event (fired when the page fully loads)
-        page.once('load', async () => {
-            try {
-                const content = await page.content();
-                res.send(content); // Send the rendered HTML as soon as the page is fully loaded
-                await browser.close(); // Close the browser after sending the response
-            } catch (err) {
-                console.error('Error while sending content:', err);
-                res.status(500).send('Error while rendering the page.');
-            }
-        });
+        // Handle page events and render the page asynchronously
+        await page.goto(targetUrl, { waitUntil: 'networkidle2' });
 
-        // Optionally, listen to other events like 'domcontentloaded'
-        page.on('domcontentloaded', () => {
-            console.log('DOM content loaded');
-        });
+        // Use a function to get full page content asynchronously
+        const fullContent = await getFullPageContent(page);
 
-        // Navigate to the target URL
-        return await page.goto(targetUrl)
+        // Send the rendered HTML content as the response
+        res.send(fullContent);
+
+        // Close the browser after sending the response
+        await browser.close();
     } catch (err) {
         console.error('Error in Puppeteer:', err);
         if (browser) await browser.close();
